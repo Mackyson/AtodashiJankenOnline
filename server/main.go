@@ -13,7 +13,7 @@ type Player struct {
 	Name    string
 }
 
-func NewPlayer(ownRoom *room, ws *websocket.Conn, name string) {
+func NewPlayer(ownRoom *Room, ws *websocket.Conn, name string) *Player {
 	return &Player{
 		OwnRoom: ownRoom,
 		Ws:      ws,
@@ -26,9 +26,9 @@ type Room struct {
 	Id      string
 }
 
-func NewRoom(id string) {
+func NewRoom(id string) *Room {
 	return &Room{
-		Players: [2]Player{},
+		Players: &[2]Player{},
 		Id:      id,
 	}
 }
@@ -46,7 +46,7 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Logger())
 
-	router.GET("/:greet", func(c *gin.Context) {
+	router.GET("/greet/:greet", func(c *gin.Context) {
 		hello := c.Param("greet")
 		c.JSON(http.StatusOK, gin.H{
 			"greet": hello,
