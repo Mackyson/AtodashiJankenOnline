@@ -1,0 +1,18 @@
+title: "MatchMessage"
+
+type: "object"
+required:
+    - "type"
+    - "side"
+properties:
+    type:
+        type: "string"
+        example: "HandChange"
+        example: "isReady"
+    side:
+        type: "string"
+        example: "Left"
+        example: "Right"
+    payload:
+        description: "HandChangeならグーとかパーとか，いい感じに"
+
