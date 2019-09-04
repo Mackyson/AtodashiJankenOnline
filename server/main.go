@@ -16,26 +16,37 @@ const (
 	Pa
 )
 
+type Message struct {
+	Type    string
+	Side    string
+	payload string
+}
+
 type Player struct {
 	OwnRoom *Room
 	Ws      *websocket.Conn
+	Side    string
 	Name    string
 }
 
 func (p *Player) listen() {
 }
 
-func NewPlayer(ownRoom *Room, ws *websocket.Conn, name string) *Player {
+func NewPlayer(ownRoom *Room, ws *websocket.Conn, side string, name string) *Player {
 	return &Player{
 		OwnRoom: ownRoom,
 		Ws:      ws,
+		Side:    side,
 		Name:    name,
 	}
 }
 
 type Room struct {
-	Players [2]*Player
-	Id      string
+	Players      [2]*Player
+	IsReadyCh    chan *Message
+	ChangeHandCh chan *Message
+	ResultCh     chan *Message
+	Id           string
 }
 
 func (r *Room) run() {
@@ -47,8 +58,11 @@ func (r *Room) run() {
 
 func NewRoom(id string) *Room {
 	return &Room{
-		Players: [2]*Player{},
-		Id:      id,
+		Players:      [2]*Player{},
+		IsReadyCh:    make(chan *Message, 1),
+		ChangeHandCh: make(chan *Message, 1),
+		ResultCh:     make(chan *Message, 1),
+		Id:           id,
 	}
 }
 
@@ -57,8 +71,8 @@ func matching(playerCh chan *websocket.Conn) {
 		p1Ch := <-playerCh
 		p2Ch := <-playerCh
 		r := NewRoom("a")
-		p1 := NewPlayer(r, p1Ch, "1")
-		p2 := NewPlayer(r, p2Ch, "2")
+		p1 := NewPlayer(r, p1Ch, "Left", "1")
+		p2 := NewPlayer(r, p2Ch, "Right", "2")
 		r.Players[0] = p1
 		r.Players[1] = p2
 		go p1.listen()
