@@ -22,7 +22,7 @@ function startChat(ws){
 	document.getElementById("sendBtn").addEventListener("click",function(e){
 		var box = document.getElementById("box")
 		var data = {}
-		data["time"] = ""
+		data["type"] = box.value
 		ws.send(
 			JSON.stringify(data)
 		)

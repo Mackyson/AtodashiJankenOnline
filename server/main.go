@@ -17,9 +17,9 @@ const (
 )
 
 type Message struct {
-	Type    string
-	Side    string
-	payload string
+	Type    string `json:"type"`
+	Side    string `json:"side"`
+	payload string `json:"payload"`
 }
 
 type Player struct {
@@ -30,6 +30,26 @@ type Player struct {
 }
 
 func (p *Player) listen() {
+	for {
+		var msg *Message
+		err := p.Ws.ReadJSON(&msg)
+		if err != nil {
+			log.Printf("+v", err)
+			//			p.OwnRoom.Disconnected(p)
+			_ = p.Ws.Close()
+			return
+		} else {
+			log.Printf("+v", msg.Type)
+			switch msg.Type {
+			case "isReady":
+				p.OwnRoom.IsReadyCh <- msg
+			case "changeHand":
+				p.OwnRoom.ChangeHandCh <- msg
+			case "result":
+				p.OwnRoom.ResultCh <- msg
+			}
+		}
+	}
 }
 
 func NewPlayer(ownRoom *Room, ws *websocket.Conn, side string, name string) *Player {
@@ -50,10 +70,35 @@ type Room struct {
 }
 
 func (r *Room) run() {
-	for _, i := range r.Players {
-		i.Ws.WriteJSON("{\"text\":\"Yee\"}")
+	//var startCh = make(chan bool)
+	for {
+		select {
+		//case msg := <-r.IsReadyCh:
+		case <-r.IsReadyCh: //動作チェック
+			r.do1()
+		//case hand := <-r.ChangeHandCh:
+		case <-r.ChangeHandCh:
+			r.do2()
+		//case result := <-r.ResultCh:
+		case <-r.ResultCh:
+			r.do3()
+		}
 	}
-
+}
+func (r *Room) do1() { //provisional function
+	for _, p := range r.Players {
+		p.Ws.WriteJSON("\"do\":\"1\"")
+	}
+}
+func (r *Room) do2() { //provisional function
+	for _, p := range r.Players {
+		p.Ws.WriteJSON("\"do\":\"2\"")
+	}
+}
+func (r *Room) do3() { //provisional function
+	for _, p := range r.Players {
+		p.Ws.WriteJSON("\"do\":\"3\"")
+	}
 }
 
 func NewRoom(id string) *Room {
