@@ -25,20 +25,22 @@ type Message struct {
 type Player struct {
 	OwnRoom *Room
 	Ws      *websocket.Conn
-	Side    string
+	Side    string //FIXME 絶対enumにすべきだろ
 	Name    string
 }
 
 func (p *Player) listen() {
 	for {
+		//JSON読み込み
 		var msg *Message
 		err := p.Ws.ReadJSON(&msg)
 		if err != nil {
 			log.Printf("+v", err)
-			//			p.OwnRoom.Disconnected(p)
+			p.OwnRoom.Disconnected(p)
 			_ = p.Ws.Close()
 			return
 		} else {
+			//正常に読み込めた場合ルームに処理を投げる
 			log.Printf("+v", msg.Type)
 			switch msg.Type {
 			case "isReady":
@@ -100,6 +102,10 @@ func (r *Room) do3() { //provisional function
 		p.Ws.WriteJSON("\"do\":\"3\"")
 	}
 }
+func (r *Room) Disconnected(p *Player) {
+	//TODO 通信が切れたときはノーゲームに(試合時間短いからね)
+	return
+}
 
 func NewRoom(id string) *Room {
 	return &Room{
@@ -112,40 +118,50 @@ func NewRoom(id string) *Room {
 }
 
 func matching(playerCh chan *websocket.Conn) {
+	//来たヤツを片っ端からねじ込むスタイル
 	for {
-		p1Ch := <-playerCh
-		p2Ch := <-playerCh
+		p1Conn := <-playerCh
+		p2Conn := <-playerCh
 		r := NewRoom("a")
-		p1 := NewPlayer(r, p1Ch, "Left", "1")
-		p2 := NewPlayer(r, p2Ch, "Right", "2")
+		p1 := NewPlayer(r, p1Conn, "Left", "1")
+		p2 := NewPlayer(r, p2Conn, "Right", "2")
 		r.Players[0] = p1
 		r.Players[1] = p2
+		//TODO 一度フロントにJSONを送信してLeftSideかRightSideか決める必要がある．
 		go p1.listen()
 		go p2.listen()
 		go r.run()
 	}
 }
 
+//Websocket通信に昇華するやつ
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 }
 
 func main() {
+	//ポートの指定を可能に．デフォルトでは8080
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
+
+	//gin諸設定
 	router := gin.New()
 	router.Use(gin.Logger())
+	//TODO Staticの使い勝手が妙に悪い．使い方調べる．
 	router.Static("/assets", "../static/")
+	//テスト用
 	router.GET("/greet/:greet", func(c *gin.Context) {
 		hello := c.Param("greet")
 		c.JSON(http.StatusOK, gin.H{
 			"greet": hello,
 		})
 	})
+	//プレイヤーの非同期待ち行列
 	var playerCh = make(chan *websocket.Conn, 2)
+	//マッチング用GET
 	router.GET("/match", func(c *gin.Context) {
 		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
