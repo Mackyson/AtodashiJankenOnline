@@ -158,7 +158,8 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Logger())
 	//TODO Staticの使い勝手が妙に悪い．使い方調べる．
-	router.Static("/assets", "../static/")
+	//TODO はやいとこpublicをまともに動くように
+	router.Static("/assets", "../old_front/")
 	//テスト用
 	router.GET("/greet/:greet", func(c *gin.Context) {
 		hello := c.Param("greet")
