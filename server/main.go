@@ -104,6 +104,9 @@ func (r *Room) do3() { //provisional function
 }
 func (r *Room) Disconnected(p *Player) {
 	//TODO 通信が切れたときはノーゲームに(試合時間短いからね)
+	for _, p := range r.Players {
+		p.Ws.WriteJSON("\"Result\":\"NoGame\"")
+	}
 	return
 }
 
@@ -138,6 +141,10 @@ func matching(playerCh chan *websocket.Conn) {
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	//同一生成元ポリシーに引っかかる対策
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
 func main() {
