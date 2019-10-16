@@ -1,0 +1,48 @@
+version: '3'
+services:
+
+        app:
+                build:
+                  context: .
+                  dockerfile: ./docker/app/Dockerfile
+                container_name: app
+                restart: always
+                ports:
+                  - 8080:8080
+                environment:
+                  - PORT=8080
+                  - GO111MODULE=on
+                  - DB_HOST=db
+                  - DB_NAME=devdb
+                  - DB_USER=devuser
+                  - DB_PASSWORD=devpasswd
+                volumes:
+                   - .:/go/src/app
+
+        db:
+                image: mysql
+                container_name: mysql
+                restart: always
+                ports:
+                  - 3306:3306
+                environment:
+                  - MYSQL_ROOT_PASSWORD=root
+                  - MYSQL_DATABASE=devdb
+                  - MYSQL_USER=devuser
+                  - MYSQL_PASSWORD=devpasswd
+                volumes:
+                  - ./docker/db/data:/var/lib/mysql
+                  - ./docker/db/my.cnf:/etc/mysql/conf.d/my.cnf
+
+        phpMyAdmin: #GUIでDBを確認したいかも
+                image: phpmyadmin/phpmyadmin
+                container_name: phpmyadmin
+                ports:
+                  -  4040:80
+                environment:
+                  - PMA_ARBITRARY=1
+                  - PMA_HOST=mysql
+                  - PMA_USER=devuser
+                  - PMA_PASSWORD=devpasswd
+                volumes:
+                  - /session
